@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>License Validation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            padding: 2em;
+        }
+
+        h1 {
+            color: #bb86fc;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        input, button {
+            padding: 0.5em;
+            margin-top: 0.5em;
+            background-color: #1f1f1f;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            border-radius: 5px;
+            width: 100%;
+        }
+
+        button {
+            background-color: #03dac5;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #00c4b4;
+        }
+
+        .result {
+            margin-top: 2em;
+            padding: 1em;
+            background-color: #333;
+            border-radius: 5px;
+        }
+
+        .valid {
+            color: #00e676;
+        }
+
+        .invalid {
+            color: #e63946;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Check License Validity</h1>
+        <input type="text" id="licenseCode" placeholder="Enter License Code">
+        <button onclick="checkLicense()">Check License</button>
+
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        function checkLicense() {
+            const licenseCode = document.getElementById("licenseCode").value.trim();
+            const resultDiv = document.getElementById("result");
+
+            if (!licenseCode) {
+                resultDiv.style.display = "none";
+                alert("Please enter a license code.");
+                return;
+            }
+
+            // Abrufen der Lizenz von der API
+            fetch(`https://yourwebsite.com/get-license/${licenseCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Das Ablaufdatum der Lizenz prüfen
+                    const expirationDate = new Date(data.expirationDate);
+                    const currentDate = new Date();
+
+                    // Wenn das Ablaufdatum größer ist als das aktuelle Datum, ist die Lizenz gültig
+                    if (expirationDate > currentDate) {
+                        resultDiv.innerHTML = `<p class="valid">The license is valid until: ${expirationDate.toLocaleString()}</p>`;
+                    } else {
+                        resultDiv.innerHTML = `<p class="invalid">The license has expired.</p>`;
+                    }
+
+                    resultDiv.style.display = "block";
+                })
+                .catch(error => {
+                    resultDiv.innerHTML = `<p class="invalid">Error: License not found or invalid request.</p>`;
+                    resultDiv.style.display = "block";
+                });
+        }
+    </script>
+</body>
+</html>
