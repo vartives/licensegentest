@@ -136,50 +136,10 @@
     <script>
         let licenses = JSON.parse(localStorage.getItem("licenses")) || [];
 
-        document.getElementById("licenseForm").addEventListener("submit", async (e) => {
-            e.preventDefault();
-
-            const customNameInput = document.getElementById("customName").value.trim();
-            const customName = customNameInput ? customNameInput.toUpperCase() : "VIGA";
-            const duration = parseInt(document.getElementById("duration").value);
-            const durationType = document.getElementById("durationType").value;
-
-            // Senden Sie die Lizenzinformationen an den Worker API-Endpunkt
-            const response = await fetch('https://licensegentest.franzl2011.workers.dev/generate-license', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    customName: customName,
-                    duration: duration,
-                    durationType: durationType,
-                }),
-            });
-
-            if (response.ok) {
-                const license = await response.json();
-                
-                // Lizenzinformationen anzeigen
-                document.getElementById("licenseInfo").innerText = `License Code: ${license.licenseCode}\nValid until: ${license.expirationDateString}`;
-                
-                // Lizenz zur Liste hinzufügen
-                licenses.push(license);
-                localStorage.setItem("licenses", JSON.stringify(licenses));
-
-                // Lizenzliste aktualisieren
-                updateLicenseList();
-            } else {
-                alert("Error generating license");
-            }
-
-            // Formular zurücksetzen
-            document.getElementById("licenseForm").reset();
-        });
-
+        // Laden der gespeicherten Lizenzen beim Seitenaufruf
         function updateLicenseList() {
             const list = document.getElementById("licenseList");
-            list.innerHTML = "";
+            list.innerHTML = ""; // Liste zurücksetzen, bevor neue Lizenzen hinzugefügt werden
 
             licenses.forEach((license, index) => {
                 const listItem = document.createElement("li");
@@ -194,12 +154,14 @@
             });
         }
 
+        // Kopieren der Lizenz in die Zwischenablage
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(() => {
                 alert("License code copied!");
             });
         }
 
+        // Löschen einer Lizenz
         function deleteLicense(index) {
             if (confirm("Are you sure you want to delete this license?")) {
                 licenses.splice(index, 1);
@@ -208,9 +170,50 @@
             }
         }
 
-        // Saved licenses anzeigen
+        // Lizenz erstellen
+        document.getElementById("licenseForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const customNameInput = document.getElementById("customName").value.trim();
+            const customName = customNameInput ? customNameInput.toUpperCase() : "VIGA";
+            const duration = parseInt(document.getElementById("duration").value);
+            const durationType = document.getElementById("durationType").value;
+
+            // Sende die Anfrage an den Worker
+            const response = await fetch('https://deine-worker-url.workers.dev/generate-license', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    customName: customName,
+                    duration: duration,
+                    durationType: durationType,
+                }),
+            });
+
+            if (response.ok) {
+                const license = await response.json();
+
+                // Lizenzinformationen anzeigen
+                document.getElementById("licenseInfo").innerText = `License Code: ${license.licenseCode}\nValid until: ${license.expirationDateString}`;
+
+                // Lizenz zur Liste hinzufügen
+                licenses.push(license);
+                localStorage.setItem("licenses", JSON.stringify(licenses));
+
+                // Lizenzliste aktualisieren
+                updateLicenseList();
+            } else {
+                alert("Error generating license");
+            }
+
+            // Formular zurücksetzen
+            document.getElementById("licenseForm").reset();
+        });
+
+        // Zeige gespeicherte Lizenzen beim Laden der Seite
         updateLicenseList();
     </script>
-
 </body>
 </html>
