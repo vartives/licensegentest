@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>License Generator</title>
@@ -111,17 +110,18 @@
                 <input type="text" id="customName" placeholder="VIGA">
 
                 <label for="duration">Duration:</label>
-                <input type="number" id="duration" min="1" placeholder="Enter duration" required="">
+                <input type="number" id="duration" min="1" placeholder="Enter duration" required>
 
                 <label for="durationType">Duration Type:</label>
                 <select id="durationType">
                     <option value="hours">Hours</option>
-                    <option value="days" selected="selected">Days</option>
+                    <option value="days" selected>Days</option>
                     <option value="months">Months</option>
                     <option value="lifetime">Lifetime</option>
                 </select>
 
                 <button type="submit">Generate License</button>
+                <button type="button" onclick="downloadLicenses()">Download Licenses as JSON</button>
             </form>
 
             <h2 id="licenseInfo"></h2>
@@ -136,42 +136,7 @@
     <script>
         let licenses = JSON.parse(localStorage.getItem("licenses")) || [];
 
-        // Laden der gespeicherten Lizenzen beim Seitenaufruf
-        function updateLicenseList() {
-            const list = document.getElementById("licenseList");
-            list.innerHTML = ""; // Liste zurücksetzen, bevor neue Lizenzen hinzugefügt werden
-
-            licenses.forEach((license, index) => {
-                const listItem = document.createElement("li");
-                listItem.innerHTML = `
-                    <strong>Name:</strong> ${license.customName}<br>
-                    <strong>License Code:</strong> ${license.licenseCode}<br>
-                    <strong>Valid until:</strong> ${license.expirationDateString}
-                    <button class="copy-btn" onclick="copyToClipboard('${license.licenseCode}')">Copy</button>
-                    <button class="delete-btn" onclick="deleteLicense(${index})">Delete</button>
-                `;
-                list.appendChild(listItem);
-            });
-        }
-
-        // Kopieren der Lizenz in die Zwischenablage
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                alert("License code copied!");
-            });
-        }
-
-        // Löschen einer Lizenz
-        function deleteLicense(index) {
-            if (confirm("Are you sure you want to delete this license?")) {
-                licenses.splice(index, 1);
-                localStorage.setItem("licenses", JSON.stringify(licenses));
-                updateLicenseList();
-            }
-        }
-
-        // Lizenz erstellen
-        document.getElementById("licenseForm").addEventListener("submit", async (e) => {
+        document.getElementById("licenseForm").addEventListener("submit", (e) => {
             e.preventDefault();
 
             const customNameInput = document.getElementById("customName").value.trim();
@@ -179,40 +144,54 @@
             const duration = parseInt(document.getElementById("duration").value);
             const durationType = document.getElementById("durationType").value;
 
-            // Sende die Anfrage an den Worker
-            const response = await fetch('https://deine-worker-url.workers.dev/generate-license', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    customName: customName,
-                    duration: duration,
-                    durationType: durationType,
-                }),
-            });
+            const randomLetters = Math.random().toString(36).substring(2, 6).toUpperCase();
+            const randomNumbers = Math.floor(1000 + Math.random() * 9000);
+            const licenseCode = `${customName}-${randomLetters}${randomNumbers}`;
 
-            if (response.ok) {
-                const license = await response.json();
-
-                // Lizenzinformationen anzeigen
-                document.getElementById("licenseInfo").innerText = `License Code: ${license.licenseCode}\nValid until: ${license.expirationDateString}`;
-
-                // Lizenz zur Liste hinzufügen
-                licenses.push(license);
-                localStorage.setItem("licenses", JSON.stringify(licenses));
-
-                // Lizenzliste aktualisieren
-                updateLicenseList();
-            } else {
-                alert("Error generating license");
+            let expirationDateString = "Lifetime";
+            if (durationType !== "lifetime") {
+                const expirationDate = new Date();
+                if (durationType === "hours") expirationDate.setHours(expirationDate.getHours() + duration);
+                if (durationType === "days") expirationDate.setDate(expirationDate.getDate() + duration);
+                if (durationType === "months") expirationDate.setMonth(expirationDate.getMonth() + duration);
+                expirationDateString = expirationDate.toLocaleString();
             }
 
-            // Formular zurücksetzen
+            const license = { customName, licenseCode, expirationDateString };
+            licenses.push(license);
+            localStorage.setItem("licenses", JSON.stringify(licenses));
+
+            document.getElementById("licenseInfo").innerText = `License Code: ${licenseCode}\nValid until: ${expirationDateString}`;
+
             document.getElementById("licenseForm").reset();
+            updateLicenseList();
         });
 
-        // Zeige gespeicherte Lizenzen beim Laden der Seite
+        function updateLicenseList() {
+            const list = document.getElementById("licenseList");
+            list.innerHTML = "";
+
+            licenses.forEach((license, index) => {
+                const listItem = document.createElement("li");
+                listItem.innerHTML = `
+                    <strong>Name:</strong> ${license.customName}<br>
+                    <strong>License Code:</strong> ${license.licenseCode}<br>
+                    <strong>Valid until:</strong> ${license.expirationDateString}
+                `;
+                list.appendChild(listItem);
+            });
+        }
+
+        function downloadLicenses() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(licenses, null, 2));
+            const downloadAnchor = document.createElement("a");
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "licenses.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
         updateLicenseList();
     </script>
 </body>
